@@ -1,0 +1,26 @@
+CONFIG FLAPS := [
+    (
+      ( ^((L_F Flap Angle >= 13.5) * (L_F Flap Angle =< 16.5)) * Valid(L_F Flap Angle) ) +
+      ( ^((R_F Flap Angle >= 13.5) * (R_F Flap Angle =< 16.5)) * Valid(R_F Flap Angle) ) +
+      ( ^((L_S Flap Angle >= 13.5) * (L_S Flap Angle =< 16.5)) * Valid(L_S Flap Angle) ) +
+      ( ^((R_S Flap Angle >= 13.5) * (R_S Flap Angle =< 16.5)) * Valid(R_S Flap Angle) )
+    ) +
+    (
+      ((L_S Slat Angle < 19.0) * Valid(L_S Slat Angle)) +
+      ((R_S Slat Angle < 19.0) * Valid(R_S Slat Angle)) +
+      ((L_F Slat Angle < 19.0) * Valid(L_F Slat Angle)) +
+      ((R_F Slat Angle < 19.0) * Valid(R_F Slat Angle))
+    )
+] * Takeoff Configration;
+
+// 表达式中如何区分哪些是变量，哪些是其他宏
+//    名称是唯一的，可以用名称来粪便
+// Valid 是一个函数，该函数在哪定义、怎么定义
+//    Valid 是一个函数，需要通过其他的方式来为指定的变量决定 Valid 的结果
+//    这个指定的方式需要记录他的修改历史
+
+
+1 + 1
+(1 + 2) * (3 + 4)
+!(3 + 4) * A
+Angle = (A * 0.5) + !(B + 1)

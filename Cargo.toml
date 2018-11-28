@@ -1,0 +1,7 @@
+[package]
+name = "formula_scaner"
+version = "0.1.0"
+authors = ["sinsaychen <sinsaychen@icloud.com>"]
+edition = "2018"
+
+[dependencies]
