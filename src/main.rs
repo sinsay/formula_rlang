@@ -1,11 +1,8 @@
 use std::env as Env;
-use std::rc::Rc;
-use std::collections::HashMap;
 
 pub mod formula_scaner;
 pub mod formula_calculator;
 
-use self::formula_calculator::FormulaCalc;
 use crate::formula_scaner::Parser;
 
 fn main() {
@@ -19,7 +16,8 @@ fn main() {
     BinaryOp: +, -, *, /
     UnaryOp: ^
     LogicOp: >, >=, <, <=, !=
-    Function: Variant(Formula)
+    Function Definition: Variant(Variant, ...) {{ Exp; ... }}
+    Function Call: Variant(Variant|Constant, ...)
     Exp: UnaryOp Value
          Value BinaryOp Value
          (Exp)
