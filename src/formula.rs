@@ -2,28 +2,31 @@ use std::rc::Rc;
 use std::collections::HashMap;
 use std::iter::Peekable;
 use std::str::Chars;
-use crate::formula_calculator::FormulaCalc;
+use crate::calculator::FormulaCalc;
 
 /// 解析公式的节点类型，可能有变量、常量、操作符、嵌套的公式类型等
 #[derive(Debug)]
 pub enum FormulaNode {
     /// 变量节点，可以是定义变量，也可能是引用变量,
-    /// 变量可用于所有的计算场景，及作为函数的参数及返回值
+/// 变量可用于所有的计算场景，及作为函数的参数及返回值
     Variant(String),
     /// 常量节点
-    /// 定义了在表达式中固定的值
+/// 定义了在表达式中固定的值
     Constant(f64),
+    /// 布尔值节点
+/// 定义逻辑计算的结果
+    Bool(bool),
     /// 操作符节点，定义了常用的数学及逻辑操作符
     Operator(Box<OperatorNode>),
     /// 函数调用
-    /// 用来描述当前需要调用的函数信息，包括 @name 函数名， @args 调用该函数所传递的参数
+/// 用来描述当前需要调用的函数信息，包括 @name 函数名， @args 调用该函数所传递的参数
     FunctionCall { name: String, args: Vec<Box<FormulaNode>> },
     /// 函数定义
-    /// 定义了函数的 @name 名称， @args 函数的参数信息，以及 @expressions 函数体，
-    /// 函数体由一系列的表达式组成，表达式可以是任意的表达式节点
+/// 定义了函数的 @name 名称， @args 函数的参数信息，以及 @expressions 函数体，
+/// 函数体由一系列的表达式组成，表达式可以是任意的表达式节点
     Function { name: String, args: Vec<Box<FormulaNode>>, expressions: Vec<Box<FormulaNode>> },
     /// 函数的参数定义
-    /// 其中包括了该参数的名称以及该参数的值
+/// 其中包括了该参数的名称以及该参数的值
     Arg { name: String, value: Box<FormulaNode> },
     /// 表达式节点，由 FormulaNode 中其他类型的节点组成
     Formula { name: String, formula: Rc<FormulaNode> },
@@ -58,6 +61,20 @@ pub enum OperatorNode {
     Equal { left: Box<FormulaNode>, right: Box<FormulaNode> },
     /// 取反操作节点
     Not(Box<FormulaNode>),
+
+    /// 逻辑与操作
+    And { left: Box<FormulaNode>, right: Box<FormulaNode> },
+    /// 逻辑或操作
+    Or { left: Box<FormulaNode>, right: Box<FormulaNode> },
+}
+
+#[derive(Debug)]
+/// 公式计算的结果值
+pub enum CalculateOption {
+    Bool(bool),
+    Num(f64),
+    Err(String),
+    None,
 }
 
 /// 表达式解析器
@@ -66,6 +83,7 @@ pub enum OperatorNode {
 pub struct Parser {
     env: HashMap<String, Rc<FormulaNode>>
 }
+
 
 impl Parser {
     /// 创建一个新的表达式解析器
@@ -80,7 +98,6 @@ impl Parser {
         let mut iter = formula.chars().peekable();
         skip_space(&mut iter);
         if let None = iter.peek() {
-            println!("需要解析的表达式为空!");
             return Rc::new(FormulaNode::None);
         }
 
@@ -96,6 +113,7 @@ impl Parser {
                 FormulaNode::Formula { name, formula: _ } => {
                     self.env.insert(name.clone(), node.clone());
                 }
+                FormulaNode::UnKnow(msg) => return Rc::new(FormulaNode::UnKnow(msg.clone())),
                 _ => ()
             };
         }
@@ -104,7 +122,7 @@ impl Parser {
 
     /// 执行 formula 表达式，表达式所需的各种变量及函数需要在执行前 parse,
     /// 以加入环境变量
-    pub fn calculate(&mut self, formula: String) -> f64 {
+    pub fn calculate(&mut self, formula: String) -> CalculateOption {
         let node = self.parse(formula);
         node.as_ref().calc(&self.env)
     }
@@ -157,32 +175,32 @@ fn scan_node(iter: &mut Peekable<Chars>, limit: bool) -> FormulaNode {
         }
 
         match iter.peek().unwrap() {
-            // 公式定义: 命名
+// 公式定义: 命名
             ':' => {
                 return scan_naming_node(iter, node);
             }
-            // 处理一元计算
+// 处理一元计算
             '^' => {
-                // 处理一元计算节点，一元计算节点需要用到该节点之后的后置节点
+// 处理一元计算节点，一元计算节点需要用到该节点之后的后置节点
                 iter.next();
                 let next_node = scan_node(iter, true);
                 node = Some(FormulaNode::Operator(Box::new(
                     OperatorNode::Not(Box::new(next_node)))))
             }
             '(' | '[' => {
-                // 开始处理嵌套的 Brace
+// 开始处理嵌套的 Brace
                 node = Some(find_end_brace(iter));
             }
             'A'...'Z' | 'a'...'z' => {
-                // 可能是 Variant 也可能是 Formula
+// 可能是 Variant 也可能是 Formula
                 let var_node = scan_variant(iter);
 
-                // 如果一个变量后续是括号，则说明它是一个函数
+// 如果一个变量后续是括号，则说明它是一个函数
                 skip_space(iter);
                 let n = match iter.peek() {
                     Some(c) if c == &'(' => {
                         let sub_formula = find_end_brace_without_parse(iter);
-                        // 处理函数的参数
+// 处理函数的参数
                         let args = scan_split_node(sub_formula, '(', ')', ',');
                         let func_node = match var_node {
                             FormulaNode::Variant(name) => FormulaNode::FunctionCall {
@@ -197,12 +215,12 @@ fn scan_node(iter: &mut Peekable<Chars>, limit: bool) -> FormulaNode {
                     _ => var_node
                 };
 
-                // 检查是否函数定义, 如果是函数定义，则需要确认 args 中的元素必须都是 Variant 类型
+// 检查是否函数定义, 如果是函数定义，则需要确认 args 中的元素必须都是 Variant 类型
                 skip_space(iter);
                 let n = match iter.peek() {
                     Some(c) if c == &'{' => {
                         let sub_formula = find_end_brace_without_parse(iter);
-                        // 解析出函数体中的多个表达式，每个表达式之间使用 ; 进行分割
+// 解析出函数体中的多个表达式，每个表达式之间使用 ; 进行分割
                         let expressions = scan_split_node(sub_formula, '{', '}', ';');
                         match n {
                             FormulaNode::FunctionCall { name, args } => {
@@ -220,7 +238,7 @@ fn scan_node(iter: &mut Peekable<Chars>, limit: bool) -> FormulaNode {
                 node = Some(scan_const(iter));
             }
             '+' | '-' | '*' | '/' => {
-                // 处理二元计算节点，计算节点的话可能会需要用到前置节点以及后置节点
+// 处理二元计算节点，计算节点的话可能会需要用到前置节点以及后置节点
                 node = Some(scan_math(iter, node));
             }
             '>' | '<' | '=' => {
@@ -228,12 +246,37 @@ fn scan_node(iter: &mut Peekable<Chars>, limit: bool) -> FormulaNode {
             }
             ';' => {
                 iter.next();
-                break;
+            }
+            '&' => {
+                iter.next(); // skip first &
+                match iter.peek() {
+                    Some('&') => {
+                        iter.next(); // skip second &
+                        node = Some(scan_logic_and(iter, node));
+                    }
+                    _ => {
+// maybe mathematical &, but not support yet
+                        return FormulaNode::UnKnow(format!("逻辑与的关键符号为 &&， 缺少了第二个 &"));
+                    }
+                }
+            }
+            '|' => {
+                iter.next(); // skip first &
+                match iter.peek() {
+                    Some('|') => {
+                        iter.next(); // skip second &
+                        node = Some(scan_logic_or(iter, node));
+                    }
+                    _ => {
+// maybe mathematical &, but not support yet
+                        return FormulaNode::UnKnow(format!("逻辑与的关键符号为 ||， 缺少了第二个 |"));
+                    }
+                }
             }
             _ => panic!("扫描公式时遇到非法符号: {}！", iter.peek().unwrap())
         }
 
-        if node.is_some() && limit {
+        if node.is_some() & &limit {
             return node.unwrap();
         }
     }
@@ -258,7 +301,7 @@ fn find_end_brace_without_parse(iter: &mut Peekable<Chars>) -> String {
                 return sub_formula;
             }
             '(' | '[' | '{' => {
-                // 找到了嵌套的 Quote
+// 找到了嵌套的 Quote
                 brace_count += 1;
                 sub_formula.push(c);
             }
@@ -283,7 +326,7 @@ fn find_end_brace(iter: &mut Peekable<Chars>) -> FormulaNode {
 
 /// 处理公式命名
 fn scan_naming_node(iter: &mut Peekable<Chars>, node: Option<FormulaNode>) -> FormulaNode {
-    // 处理公式的命名, 前置节点应为一个 Variant 节点
+// 处理公式的命名, 前置节点应为一个 Variant 节点
     if node.is_none() {
         panic!("公式的格式出错，命名公式的格式为 公式名 := 表达式");
     }
@@ -293,7 +336,7 @@ fn scan_naming_node(iter: &mut Peekable<Chars>, node: Option<FormulaNode>) -> Fo
     match iter.peek() {
         None => panic!("公式格式出错，等号后没有后续的表达式"),
         Some(c) if c != &'=' => panic!("公式格式出错，命名公式时缺少了 : 之后的 = 号"),
-        // c is =
+// c is =
         _ => iter.next()
     };
 
@@ -432,4 +475,22 @@ fn scan_split_node(formula_str: String, begin_brace: char, end_brace: char, spli
     }
 
     args
+}
+
+fn scan_logic_and(iter: &mut Peekable<Chars>, left: Option<FormulaNode>) -> FormulaNode {
+    let right = scan_node(iter, true);
+    let left = left.unwrap();
+    return FormulaNode::Operator(Box::new(OperatorNode::And {
+        left: Box::new(left),
+        right: Box::new(right),
+    }));
+}
+
+fn scan_logic_or(iter: &mut Peekable<Chars>, left: Option<FormulaNode>) -> FormulaNode {
+    let right = scan_node(iter, true);
+    let left = left.unwrap();
+    return FormulaNode::Operator(Box::new(OperatorNode::Or {
+        left: Box::new(left),
+        right: Box::new(right),
+    }));
 }

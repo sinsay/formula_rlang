@@ -1,5 +1,5 @@
 [package]
-name = "formula_scaner"
+name = "formula_parser"
 version = "0.1.0"
 authors = ["sinsaychen <sinsaychen@icloud.com>"]
 edition = "2018"

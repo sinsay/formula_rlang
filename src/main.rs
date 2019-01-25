@@ -1,9 +1,10 @@
 use std::env as Env;
 
-pub mod formula_scaner;
-pub mod formula_calculator;
+pub mod formula;
+pub mod calculator;
 
-use crate::formula_scaner::Parser;
+use crate::formula::Parser;
+//use crate::calculator::FormulaCalc;
 
 fn main() {
     let args: Vec<String> = Env::args().collect();
@@ -49,15 +50,26 @@ fn main() {
 }
 
 fn exec_cmd(parser: &mut Parser) {
+    let mut lines = String::new();
     loop {
         println!("输入表达式:");
-        let mut formula = String::new();
-        std::io::stdin().read_line(&mut formula).expect("从标准输入中读取数据时出错");
-        if formula.len() == 0 {
-            println!("输入的表达式为空!");
-            continue;
+        loop {
+            let mut formula = String::new();
+            std::io::stdin().read_line(&mut formula).expect("从标准输入中读取数据时出错");
+            if formula.trim().len() == 0 && lines.len() == 0 {
+                println!("输入的表达式为空!");
+                continue;
+            }
+
+            if formula.trim().len() == 0 {
+                break;
+            }
+
+            lines.push_str(&formula);
+            formula.clear();
         }
 
-        println!("{}", parser.calculate(formula.clone()));
+        println!("{:?}", parser.calculate(lines.clone()));
+        lines.clear();
     }
 }
