@@ -1,14 +1,41 @@
 
 
-# 方程式解析器
+# Overview
 
-方程式是一系列逻辑及数学定义，定义完善的方程式代表一个执行流程，该执行流程支持以下计算：
+formula scaner can parse an expression to an syntax tree, and then you can execute it whenever you want.
+it keep's an environment for every expression, so you can use it as as an function, but dynamic!
 
-- 数学计算
+for now it support operator below:
+
+- mathematical
   - `+、-、*、/`
-- 逻辑计算
+- logical
   - `>、>=、<、<=、!=、=`
-- 优先级计算
-  - 可通过括号提高计算的优先级
-- 可定义变量
-- 可定义函数
+- priority with brace
+- define an variant
+- define function
+- call an function
+
+## syntax
+Formula syntax:
+    Variant: String,
+    Constant: Number,
+    Value: Variant, Constant, Formula
+    Name: Constant := Formula
+    BinaryOp: +, -, *, /
+    UnaryOp: ^
+    LogicOp: >, >=, <, <=, !=
+    Function Definition: Variant(Variant, ...) {{ Exp; ... }}
+    Function Call: Variant(Variant|Constant, ...)
+    Exp: UnaryOp Value
+         Value BinaryOp Value
+         (Exp)
+
+## example
+A := 1
+B := 2
+C := !(A + 3) * B
+F(a, b) { 
+    c :=  a + b; 
+    c * 2  // the last expression means return value, it ends without semicolon!
+}
