@@ -17,6 +17,8 @@ for now it support operator below:
 - call an function
 
 ## syntax
+```
+
 Formula syntax:
     Variant: String,
     Constant: Number,
@@ -30,8 +32,13 @@ Formula syntax:
     Exp: UnaryOp Value
          Value BinaryOp Value
          (Exp)
+         
+```         
 
 ## example
+
+```
+
 A := 1
 B := 2
 C := !(A + 3) * B
@@ -39,3 +46,5 @@ F(a, b) {
     c :=  a + b; 
     c * 2  // the last expression means return value, it ends without semicolon!
 }
+
+```
