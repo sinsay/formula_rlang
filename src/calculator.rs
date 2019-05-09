@@ -4,6 +4,7 @@ use crate::formula::*;
 
 type Env = HashMap<String, Rc<FormulaNode>>;
 
+/// The trait for every formula node
 pub trait FormulaCalc {
     fn calc(&self, e: &Env) -> CalculateOption;
 }
@@ -19,7 +20,7 @@ impl FormulaCalc for FormulaNode {
                         return v.as_ref().calc(env);
                     }
                     None => {
-                        return CalculateOption::Err(format!("无法从执行环境中获取指定的变量名 {}", v));
+                        return CalculateOption::Err(format!("the variant named {} can not find in current environment", v));
                     }
                 }
             }
@@ -33,7 +34,7 @@ impl FormulaCalc for FormulaNode {
                     Some(f) => f.clone(),
                     _ => {
                         return CalculateOption::Err(
-                            format!("从执行环境中获取函数 {} 时出错，对应的函数不存在环境变量中，是否未定义该函数", name));
+                            format!("error occure while execute an function named {}, it's the function exists?", name));
                     }
                 };
 
@@ -42,7 +43,7 @@ impl FormulaCalc for FormulaNode {
                     FormulaNode::Function { name: _, args: args_define, expressions } => {
                         if args.len() != args_define.len() {
                             return CalculateOption::Err(
-                                format!("函数 {} 定义的参数个数为 {}, 与函数调用的参数个数{}不匹配", name, args_define.len(), args.len()));
+                                format!("the argument length for function {} doesn't match, expect {} but found {}.", name, args_define.len(), args.len()));
                         }
 
                         // 处理 Args, 将 Args 的值放入函数对应的参数名中
@@ -50,14 +51,14 @@ impl FormulaCalc for FormulaNode {
                             let arg_def: &Box<FormulaNode> = args_define.get(index).unwrap();
                             let arg_name = match arg_def.as_ref() {
                                 FormulaNode::Variant(name) => name,
-                                _ => return CalculateOption::Err(format!("为函数 {} 获取执行变量时出错，错误变量位置为 {}", name, index))
+                                _ => return CalculateOption::Err(format!("error occure while extracting argument for function {}, the argument index is {}", name, index))
                             };
 
                             let v = match arg.calc(env) {
                                 CalculateOption::Bool(b) => FormulaNode::Bool(b),
                                 CalculateOption::Num(f) => FormulaNode::Constant(f),
-                                CalculateOption::Err(s) => return CalculateOption::Err(format!("为函数 {} 计算参数值时出错，错误信息为 {}", name, s)),
-                                CalculateOption::None => return CalculateOption::Err(format!("为函数 {} 计算参数值时出错，错误信息为该参数返回结果为 None", name)),
+                                CalculateOption::Err(s) => return CalculateOption::Err(format!("error occure while calculate the function {}'s argument, error message is:{} ", name, s)),
+                                CalculateOption::None => return CalculateOption::Err(format!("error occure while calculate the function {}'s argument, error message is:None", name)),
                             };
                             new_env.insert(arg_name.clone(), Rc::new(v));
                         }
@@ -69,7 +70,8 @@ impl FormulaCalc for FormulaNode {
                                     new_env.insert(name.clone(), Rc::new(match result {
                                         CalculateOption::Num(f) => FormulaNode::Constant(f),
                                         CalculateOption::Bool(b) => FormulaNode::Bool(b),
-                                        _ => return CalculateOption::Err(format!("计算函数体时出错！，后续增加具体的错误表达式"))
+                                        // TODO: add more exactly message
+                                        _ => return CalculateOption::Err(format!("the body of function has syntax error!"))
                                     }));
                                 }
                                 _ => ()
@@ -77,12 +79,12 @@ impl FormulaCalc for FormulaNode {
                         }
                     }
 
-                    _ => panic!("从函数节点提取表达式时出错，该错误不可能发生")
+                    _ => panic!("error occure while extracing expression, something mysterious happend?")
                 }
 
                 return result;
             }
-            _ => CalculateOption::Err(format!("无法计算该表达式，格式出错？"))
+            _ => CalculateOption::Err(format!("syntax error?"))
         }
     }
 }
@@ -95,7 +97,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Num(l + r),
-                    _ => return CalculateOption::Err(format!("尝试使用加法来计算非数值类型"))
+                    _ => return CalculateOption::Err(format!("adding with non number argument"))
                 }
             }
             OperatorNode::Minus { left, right } => {
@@ -103,7 +105,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Num(l - r),
-                    _ => return CalculateOption::Err(format!("尝试使用减法来计算非数值类型"))
+                    _ => return CalculateOption::Err(format!("minus with non number argument"))
                 }
             }
             OperatorNode::Divide { left, right } => {
@@ -111,7 +113,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Num(l / r),
-                    _ => return CalculateOption::Err(format!("尝试使用除法来计算非数值类型"))
+                    _ => return CalculateOption::Err(format!("divide with non number argument"))
                 }
             }
             OperatorNode::Multiply { left, right } => {
@@ -119,7 +121,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Num(l * r),
-                    _ => return CalculateOption::Err(format!("尝试使用乘法来计算非数值类型"))
+                    _ => return CalculateOption::Err(format!("multiply with non number argument"))
                 }
             }
             OperatorNode::Less { left, right } => {
@@ -127,7 +129,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Bool(l < r),
-                    _ => return CalculateOption::Err(format!("尝试用 < 比较两个非数值类型"))
+                    _ => return CalculateOption::Err(format!("less operater only take number argument"))
                 }
             }
             OperatorNode::LessEqual { left, right } => {
@@ -135,7 +137,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Bool(l <= r),
-                    _ => return CalculateOption::Err(format!("尝试用 <= 比较两个非数值类型"))
+                    _ => return CalculateOption::Err(format!("less equal operater only take number argument"))
                 }
             }
             OperatorNode::Great { left, right } => {
@@ -143,7 +145,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Bool(l > r),
-                    _ => return CalculateOption::Err(format!("尝试用 > 比较两个非数值类型"))
+                    _ => return CalculateOption::Err(format!("grater operator only take number argument"))
                 }
             }
             OperatorNode::GreatEqual { left, right } => {
@@ -151,7 +153,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Bool(l >= r),
-                    _ => return CalculateOption::Err(format!("尝试用 >= 比较两个非数值类型"))
+                    _ => return CalculateOption::Err(format!("grate equal operator only take number argumnet"))
                 }
             }
             OperatorNode::Equal { left, right } => {
@@ -159,14 +161,14 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Num(l), CalculateOption::Num(r)) => return CalculateOption::Bool(l == r),
-                    _ => return CalculateOption::Err(format!("尝试用 == 比较两个非数值类型"))
+                    _ => return CalculateOption::Err(format!("equal operator only take number argument"))
                 }
             }
             OperatorNode::Not(node) => {
                 let node = node.calc(env);
                 match node {
                     CalculateOption::Bool(b) => return CalculateOption::Bool(!b),
-                    _ => return CalculateOption::Err(format!("尝试对非逻辑结果取反"))
+                    _ => return CalculateOption::Err(format!("not operator only works with logical argument"))
                 }
             }
             OperatorNode::And { left, right } => {
@@ -174,7 +176,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Bool(l), CalculateOption::Bool(r)) => return CalculateOption::Bool(l && r),
-                    _ => return CalculateOption::Err(format!("尝试对两个非数值类型使用逻辑与操作"))
+                    _ => return CalculateOption::Err(format!("and operator only works with logical argument"))
                 }
             }
             OperatorNode::Or { left, right } => {
@@ -182,7 +184,7 @@ impl FormulaCalc for OperatorNode {
                 let right = right.calc(env);
                 match (left, right) {
                     (CalculateOption::Bool(l), CalculateOption::Bool(r)) => return CalculateOption::Bool(l || r),
-                    _ => return CalculateOption::Err(format!("尝试对两个非数值类型使用逻辑或操作"))
+                    _ => return CalculateOption::Err(format!("or operator only works with logical argumnet"))
                 }
             }
         }
