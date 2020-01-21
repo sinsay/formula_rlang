@@ -3,7 +3,8 @@
 # Overview
 
 formula scaner can parse an expression to an syntax tree, and then you can execute it whenever you want.
-it keep's an environment for every expression, so you can use it as as an function, but dynamic!
+it keep's an environment for every expression, so you can use it as as an calculator or dynamic function tool, 
+withh dynamic ability!
 
 for now it support operator below:
 
