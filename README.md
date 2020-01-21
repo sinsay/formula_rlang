@@ -87,7 +87,8 @@ and the script environment api
 let mut p = formula_parser::parser::Parser::new();
 
 // parse an expression, return the node or the full syntax tree
-let parsed_node = p.parse("A := 1".to_string()); // FromulaNode::Variant { name: 'A', node: NumericNode { value: 1} }
+// FromulaNode::Variant { name: 'A', node: NumericNode { value: 1} }
+let parsed_node = p.parse("A := 1".to_string()); 
 
 // calculate the expression
 let calc_result = p.calculate("A".to_string());  // CalculateResult { value: 1 }
