@@ -37,14 +37,72 @@ Formula syntax:
 
 ## example
 
+the script demo:
+
 ```
 
+# define variable
 A := 1
 B := 2
 C := !(A + 3) * B
+
+# logic oprator
+X := A + B
+X := A - B
+X := A * B
+X := A / B
+X := A > B
+X := A >= B
+X := A < B
+X := A <= B
+X := !(A > B)
+X := (A > B) || (A == B)
+X := (A < B) && (B < C)
+
+# define function 
 F(a, b) { 
     c :=  a + b; 
     c * 2  // the last expression means return value, it ends without semicolon!
 }
+
+# function as argument
+func_as_arg(f1, arg1, arg2) {
+  f1(arg1, arg2)
+}
+
+# call function
+F(1, 2)
+F(A, B)
+F(1, B)
+
+func_as_arg(F, 1, 2)
+func_as_arg(F, A, B)
+
+```
+
+and the script environment api
+
+```rust
+// init an parser
+let mut p = formula_parser::parser::Parser::new();
+
+// parse an expression, return the node or the full syntax tree
+let parsed_node = p.parse("A := 1".to_string()); // FromulaNode::Variant { name: 'A', node: NumericNode { value: 1} }
+
+// calculate the expression
+let calc_result = p.calculate("A".to_string());  // CalculateResult { value: 1 }
+
+// get the calculate tree
+let mut converter = syntax_tree::SyntaxConverter::new(parser);
+let node = p.parse("A > B || ((A > C) && (C < D))".to_string());
+converter.with_calculate();
+let tree = converter.convert_from(&node);
+
+// got the full path of calculate procedure
+//                    -> (A > B) == True
+//  Result = Or(true) -> And(False) -> (A > C) == False
+//                                  -> (C < D) == True
+//
+
 
 ```
