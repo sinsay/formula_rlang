@@ -99,10 +99,9 @@ converter.with_calculate();
 let tree = converter.convert_from(&node);
 
 // got the full path of calculate procedure
-//                    -> (A > B) == True
-//  Result = Or(true) -> And(False) -> (A > C) == False
-//                                  -> (C < D) == True
+//   Result = Or(true)  -> (A > B) == True
+//                      -> And(False) -> (A > C) == False
+//                                    -> (C < D) == True
 //
-
 
 ```
