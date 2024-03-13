@@ -2,9 +2,11 @@
 
 # Overview
 
-formula rlang can parse an expression to an syntax tree, and then you can execute it whenever you want.
-it keep's an environment for every expression, so you can use it as as an calculator or dynamic function tool, 
+tracefull_lang can parse an expression to an syntax tree, and then you can execute it whenever you want.
+it **keep's an environment for every expression**, so you can use it as **as an calculator or dynamic language tool** on rust, 
 withh dynamic ability!
+
+the second important feature is tracefull_lang can show you the running info of your script, then you can know what happend while running!
 
 for now it support operator below:
 
