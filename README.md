@@ -2,7 +2,7 @@
 
 # Overview
 
-tracefull_lang can parse an expression to an syntax tree, and then you can execute it whenever you want.
+traceful_lang can parse an expression to an syntax tree, and then you can execute it whenever you want.
 it **keep's an environment for every expression**, so you can use it as **as an calculator or dynamic language tool** on rust, 
 withh dynamic ability!
 
